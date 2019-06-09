@@ -1,0 +1,5 @@
+interface ethernet0
+ip address 10.10.1.2/24
+enable
+do ping 10.10.1.1
+ip route default 10.10.1.2
