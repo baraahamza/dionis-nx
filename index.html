@@ -121,7 +121,9 @@ body {
 .sec {
    stroke: #f55;
 }
-
+#commands p {
+  width: fit-content;
+}
 </style>
 
 
@@ -153,14 +155,26 @@ body {
       </svg>
     </div>
     
-    <!-- <div style="margin:20px ">
-        <p>логин :cli</p> 
+    <div style="margin:20px " id="commands">
+       <!--  <p>логин :cli</p> 
           <p>пароль :cli</p> 
         <p>пароль администратора:adm</p> 
         <a href="cmd.rar">скачать проект</a>
         <br>
        <a href="doc.rar">скачать документация</a>
-    </div> -->
-   
+       -->
+       <p>interface ethernet0</p>
+       <p>ip address 10.10.1.2/24</p>
+       <p>enable</p>
+       <p>do ping 10.10.1.1</p>
+       <p>ip route default 10.10.1.2</p>
+       <p>ip route 10.10.1.1 10.10.2.1</p>
+ </div> 
+   <script>
+     $('#commands p').click(function(){
+       $('input.cmdline:last').val($(this).text())
+     })
+  
+   </script>
   </body>
 </html>

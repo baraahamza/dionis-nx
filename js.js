@@ -10,7 +10,6 @@ var IP='10.0.77.11';
 var session=2;
 var users='cli';
 var password='cli';
-
 var adminSession=2;
 var AdminPassword="adm";
 var configure=1;
@@ -299,7 +298,7 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
             return;
           }
           if(vall.startsWith("do ping ")){
-            // check if enabled
+            // // check if enabled
             if(! 'enable' in interfaces[currectInterface]  || interfaces[currectInterface].enable!=1)   {
               return doPING(ipToPing,false);
             }
@@ -316,36 +315,56 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
             if(sliptd[1]!=MASK){
               return doPING(ipToPing,false);
             }
-            ///check current interface
-            if(ipToPing==portsIps[interfaceNames.indexOf(currectInterface)]){
-           
-              var currectIpSplitWithoutMask=sliptd[0].split('.'),
-                  portIpSplitWithoutMask=ipToPing.split('.');
-              if(currectIpSplitWithoutMask[0]==portIpSplitWithoutMask[0]){
-                if(currectIpSplitWithoutMask[1]==portIpSplitWithoutMask[1]){
-                  if(currectIpSplitWithoutMask[2]==portIpSplitWithoutMask[2]){
-                    if(currectIpSplitWithoutMask[3]!=portIpSplitWithoutMask[3]){
-                      return doPING(ipToPing,true);
-                    }
+          
+ 
+            if(checkSettings(interfaces,MASK,portsIps,interfaceNames,currectInterface,ipToPing)){
+              return doPING(ipToPing,true);
+            }
+      //  check if one of interfaces is defualt
+            if(routeTable[0]!= '' && typeof routeTable[0]!== "undefined"){
+              // || routeTable[0]==ipToPing
+              
+              if(routeTable[0]==sliptd[0]){//if this interface is default
+                  if(ipToPing==sliptd[0]){//if self ping
+                  return doPING(ipToPing,false);
                   }
+                  // get target interface
+                  var rest = ipToPing.substring(0, ipToPing.lastIndexOf(".") + 1)+'1';
+                   if(checkSettings(interfaces,MASK,portsIps,interfaceNames,interfaceNames[portsIps.indexOf(rest)],rest)!=true){
+                    return doPING(ipToPing,false);
+                   }
+                  // if ! isset target
+                   if(interfaces[interfaceNames[portsIps.indexOf(rest)]].ip!=ipToPing+'/'+MASK && ipToPing != rest){
+                    return doPING(ipToPing,false);
+                   }
+
+                return doPING(ipToPing,true);
+              } 
+              else{
+                var rest = ipToPing.substring(0, ipToPing.lastIndexOf(".") + 1);
+                var last = ipToPing.substring(ipToPing.lastIndexOf(".") + 1, ipToPing.length);
+                var n = routeTable[0].startsWith(rest);
+                if(n == true ){///if pinging defualt interface
+                  if(checkSettings(interfaces,MASK,portsIps,interfaceNames,interfaceNames[portsIps.indexOf(rest + '1')],rest + '1')!=true){
+                    return doPING(ipToPing,false);
+                   }
+                    // if isset target
+                  if(last=='1'){return doPING(ipToPing,true);}
+                  if(interfaces[interfaceNames[portsIps.indexOf(rest + '1')]].ip==ipToPing+'/'+MASK){return doPING(ipToPing,true);}
                 }
               }
             }
-            if(routeTable[0]!= '' && typeof routeTable[0]!== "undefined"){
-              if(routeTable[0]==sliptd[0] || routeTable[0]==ipToPing){
-                return doPING(ipToPing,true);
-              }else{
-                alert(routeTable[0]+sliptd[0]+ipToPing)
-              }
-            }
-
-
-
-
-
-
-
-
+      // check if routed togather 
+          var targ = ipToPing.substring(0, ipToPing.lastIndexOf(".") + 1) + '1';
+          var from = sliptd[0].substring(0, sliptd[0].lastIndexOf(".") + 1) + '1';
+          var last = ipToPing.substring(ipToPing.lastIndexOf(".") + 1, ipToPing.length);
+           if(routeTable.indexOf(from+' - '+targ)!= -1 || routeTable.indexOf(targ+' - '+from)!= -1){
+            if(checkSettings(interfaces,MASK,portsIps,interfaceNames,interfaceNames[portsIps.indexOf(targ)],targ)!=true){
+              return doPING(ipToPing,false);
+             }
+             if(last=='1'){return doPING(ipToPing,true);}
+             if(interfaces[interfaceNames[portsIps.indexOf(targ)]].ip==ipToPing+'/'+MASK){return doPING(ipToPing,true);}
+           }
             return doPING(ipToPing,false);
           }
 
@@ -371,7 +390,6 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
                      if(targets[0]==targets[1]){return  output("You have entered an invalid IP address!");}
                     routeTable.push(targets[0]+' - '+targets[1]);
                     output(vall);
-                return console.log(routeTable)
                 }
               
             }
@@ -617,4 +635,38 @@ if(clearMask == true){
 }
   var mask=inputText.split('/')[1];
   return Number(ip[0])+'.'+ Number(ip[1])+'.'+ Number(ip[2])+'.'+ Number(ip[3]) + '/' + mask
+}
+
+function checkSettings(interfaces,MASK,portsIps,interfaceNames,currectInterface,ipToPing){
+      if (typeof interfaces[currectInterface] == "undefined") {
+        return false;
+    }
+  // check if enabled
+    if(! 'enable' in interfaces[currectInterface]  || interfaces[currectInterface].enable!=1)   {
+        return false;
+      }
+      if(!'ip' in interfaces[currectInterface]  || interfaces[currectInterface].ip=="")   {
+        return false;
+      }
+    ipToPing=clearIPAddress(ipToPing);
+      var sliptd=interfaces[currectInterface].ip.split('/');
+      if(sliptd[1]!=MASK){
+        return false;
+      }
+      ///check current interface
+      if(ipToPing==portsIps[interfaceNames.indexOf(currectInterface)]){
+     
+        var currectIpSplitWithoutMask=sliptd[0].split('.'),
+            portIpSplitWithoutMask=ipToPing.split('.');
+        if(currectIpSplitWithoutMask[0]==portIpSplitWithoutMask[0]){
+          if(currectIpSplitWithoutMask[1]==portIpSplitWithoutMask[1]){
+            if(currectIpSplitWithoutMask[2]==portIpSplitWithoutMask[2]){
+              if(currectIpSplitWithoutMask[3]!=portIpSplitWithoutMask[3]){
+                return true;
+              }
+            }
+          }
+        }
+      }
+      return false;
 }
