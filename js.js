@@ -1,25 +1,21 @@
-//عند الضغط على كتلر سي يتكرر النتائج
-
-
-
 
 var util = util || {};
 util.toArray = function(list) {
   return Array.prototype.slice.call(list || [], 0);};
 var IP='10.0.77.11';
-var session=2;
+var session=0;
 var users='cli';
 var password='cli';
-var adminSession=2;
+var adminSession=0;
 var AdminPassword="adm";
-var configure=1;
-var hostname ="baraa";
+var configure=0;
+var hostname ="NX-1";
 var interfaces= [];
 var MASK=24;
 var currectInterface="";
 var routeTable=[];
 routeTable[0]="";
-var interfaceNames= ['ethernet0','ethernet1','ethernet2','ethernet3','ethernet4','ethernet5','ethernet6','ethernet7','ethernet8','ethernet9','ethernet10','ethernet11'];
+var interfaceNames= ['ethernet0','ethernet1','ethernet2','ethernet3','ethernet4','ethernet5','ethernet6','ethernet7','ethernet8','ethernet9'];
 var portsIps=       ['10.10.1.1','10.10.2.1','10.10.3.1','10.10.4.1','10.10.5.1','10.10.6.1','10.10.7.1','10.10.8.1','10.10.9.1','10.10.10.1','10.10.11.1','10.10.12.1'];
 var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
   window.URL = window.URL || window.webkitURL;
@@ -142,13 +138,13 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
           }else if(session==1){
             $('input.cmdline').val("");
             if(vall!=password){
-              $('.prompt:last').html('DionisNX login as: ');
+              $('.prompt:last').html(hostname+' login as: ');
               $('input.cmdline:last').removeClass("hiddenText");
               session=0;
               return output(':The password is wrong!');
            }else{
               session=2;
-              $('.prompt:last').html('DionisNX>');
+              $('.prompt:last').html(hostname+'>');
               $('input.cmdline:last').removeClass("hiddenText");
            }
           }
@@ -166,12 +162,12 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
           $('input.cmdline').val("");
           if(vall!=AdminPassword){
             $('input.cmdline:last').removeClass("hiddenText");
-            adminSession=0;  $('.prompt:last').html('DionisNX>');
+            adminSession=0;  $('.prompt:last').html(hostname+'>');
             return output(':The password is wrong!');
           
          }else{
           adminSession=2;
-            $('.prompt:last').html('DionisNX#');
+            $('.prompt:last').html(hostname+'#');
             $('input.cmdline:last').removeClass("hiddenText");
          }
         }
@@ -228,14 +224,24 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
           var cmd = args.toLowerCase();
           // args = args.splice(1); // Remove cmd from arg list.
         }
+     
         if(configure==1){
+    
           $('input.cmdline:last').val("");
           if(vall.startsWith("hostname ")){
             hostname=vall.replace(/hostname /g,'');
-            
-            $('.prompt:last').html(hostname+'(config)#');
-            $('input.cmdline:last').removeClass("hiddenText");
-            return;
+            if (hostname.indexOf('-') > -1)
+            {
+              var sp=hostname.split('-');
+              if ((typeof sp[0] != 'undefined' && sp[0].length>0 ) && (typeof sp[1] != 'undefined'  && sp[1].length>0)) {
+                console.log(sp[0]);
+                console.log(sp[1]);
+              $('.prompt:last').html(hostname+'(config)#');
+              $('input.cmdline:last').removeClass("hiddenText");
+              return;
+              }
+            }
+            return output("Syntax error: Illegal parameter");
           }
           if(vall.startsWith("interface ")){
             // $('input.cmdline:last').val("");
@@ -245,7 +251,7 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
             }
              currectInterface=vall.replace(/interface /g,'').replace(/\s/g,'');
              if(interfaceNames.indexOf(currectInterface)==-1){
-              return output("You have to enter correct interface!");
+              // return output("You have to enter correct interface!");
              }
              //interfaceNames
              if (typeof interfaces[currectInterface] === 'undefined') {
@@ -263,10 +269,17 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
             // $('input.cmdline:last').val("");
             $('input.cmdline:last').removeClass("hiddenText");
             if(ValidateIPaddress(currectIp)){
+              var msg;
+              if('ip' in interfaces[currectInterface]  && interfaces[currectInterface].ip!=""){
+                msg='Info: Replacing primary IP: '+interfaces[currectInterface].ip+' --> ';
+              }else{
+                msg='Info: Setting primary IP: ';
+              }
+
               interfaces[currectInterface].ip =clearIPAddress(currectIp,false);
-             return output('ip address '+  interfaces[currectInterface].ip);
+             return output(msg+  interfaces[currectInterface].ip);
             }else{
-            return  output("You have entered an invalid IP address!");
+                return  output("Syntax error: Illegal parameter");
             }
             }
           }
@@ -370,6 +383,7 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
 
            
          }else{
+
           
             if(vall.startsWith("ip route ")){
                 var targets=vall.replace(/ip route /g,'').split(' ');
@@ -392,6 +406,10 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
                     output(vall);
                 }
               
+            }
+            if(vall=='do show'){
+             return  output(doShowAll()) 
+                       
             }
             if(vall=='do show ip route'){
                 output('Codes: K - kernel route, C - connected, S - static, R - RIP, ');
@@ -418,7 +436,7 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
             case 'exit':
               $('input.cmdline:last').val("");
               $('input.cmdline:last').removeClass("hiddenText");
-              $('.prompt:last').html('DionisNX>');
+              $('.prompt:last').html(hostname+'>');
               configure=0;
             break;
             case 'do show':
@@ -444,25 +462,33 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
           }
          
           function doPING(target,result=true){
-            if(result!=true){
-              // $('input.cmdline:last').val("");
-              return output('network address unreachable ');
-            }
+            // if(result!=true){
+            //   // $('input.cmdline:last').val("");
+            //   return output('network address unreachable ');
+            // }
             $('#input-line').hide();
             // $('input.cmdline:last').val("");
             var seq=0,random,totalRandom=[];
+            output('PING '+target+' ('+target+'): 56 data bytes ');
             var myVar = setInterval(timer, 500);
              
             function timer(){
-              random=Math.floor(Math.random() * 12) + 8 ;
-              random=random+(Math.floor(Math.random() * 10) + 1)/100;
-              totalRandom.push(random);
-              output('PING '+target+' ('+target+'): 56 data bytes ');
-                output('64 bytes from '+target+': seq='+seq+' ttl=64 time='+random+' ms');
-              $('#input-line').hide();
-              seq++;
-              $('#container').animate({ 
-               scrollTop: $('#container')[0].scrollHeight});
+                random=Math.floor(Math.random() * 12) + 8 ;
+                random=random+(Math.floor(Math.random() * 10) + 1)/100;
+                totalRandom.push(random);
+                // output('PING '+target+' ('+target+'): 56 data bytes ');
+                if(result!=true){
+                  output('From '+target+' icmp_seq=1 Destination Host Unreachable');
+                }else{
+                  output('64 bytes from '+target+': seq='+seq+' ttl=64 time='+random+' ms');
+                }
+                $('#input-line').hide();
+                seq++;
+                $('#container').animate({ 
+                 scrollTop: $('#container')[0].scrollHeight});
+
+                if(seq == 4 ){  myStopFunction();}
+              
             }
             ifC();
             function ifC(){
@@ -492,7 +518,12 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
             }
   
               output(' --- '+target+' ping statistics --- ');
-              output(seq+' packets transmitted, '+seq+' packets received, 0% packet loss round-trip min/avg/max = '+Math.min.apply(Math, totalRandom)+'/'+avg+'/'+Math.max.apply(Math, totalRandom));
+              if(result!=true){
+                output(seq+' packets transmitted, 0 packets received, '+seq+' errors , 100% packet loss  time 8015ms' );
+              }else{
+                output(seq+' packets transmitted, '+seq+' packets received, 0% packet loss round-trip min/avg/max = '+Math.min.apply(Math, totalRandom)+'/'+avg+'/'+Math.max.apply(Math, totalRandom));
+              }
+              
               $('#input-line').show();
            
             //   $(document).undelegate('keydown',function(e) {
@@ -501,13 +532,14 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
             // })
             }
           }
-
+   
   }
   else{
+  
           if( adminSession == 2 && vall=='configure terminal'){
             configure=1;
             $('input.cmdline:last').val("");
-            $('.prompt:last').html('DionisNX(config)#');
+            $('.prompt:last').html(hostname+'(config)#');
             $('input.cmdline:last').removeClass("hiddenText");
             return;
           }
@@ -549,23 +581,7 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
       this.value = ''; // Clear/setup line for next input.
     }
   }
-  //
-  function formatColumns_(entries) {
-    var maxName = entries[0].name;
-    util.toArray(entries).forEach(function(entry, i) {
-      if (entry.name.length > maxName.length) {
-        maxName = entry.name;
-      }
-    });
-    var height = entries.length <= 3 ?
-        'height: ' + (entries.length * 15) + 'px;' : '';
-
-    // 12px monospace font yields ~7px screen width.
-    var colWidth = maxName.length * 7;
-
-    return ['<div class="ls-files" style="-webkit-column-width:',
-            colWidth, 'px;', height, '">'];
-  }
+  
   //
   function output(html) {
     output_.insertAdjacentHTML('beforeEnd', '<p>' + html + '</p>');
@@ -594,13 +610,37 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
     output: output
   }
 };
+String.prototype.splice = function(idx, rem, str) {
+  return this.slice(0, idx) + str + this.slice(idx + Math.abs(rem));
+};
+function doShowAll(){
+ 
+  var resp='!<br>! $System: DionisNX<br>! $Version: 1.2-6<br>! $Date: '+new Date().toISOString().split('T')+'<br>!  <br>timezone MSK-3<br>!<br>hostname '+hostname+'<br>!<br>ip path-mtu-discovery<br>ip tcp ecn server-mode<br>ip tcp selective-ack<br>ip tcp syncookies<br>ip tcp timestamps<br>ip tcp window-scaling<br>!<br>ip access-group no-invalid forward<br>!<br>ip class-map prt0<br> 1 match tos 0/0xe0<br>!<br>ip class-map prt1<br> 1 match tos 0x20/0xe0<br>!<br>ip class-map prt2<br> 1 match tos 0x40/0xe0<br>!<br>ip class-map prt3<br> 1 match tos 0x60/0xe0<br>!<br>ip class-map prt4<br> 1 match tos 0x80/0xe0<br>!<br>ip class-map prt5<br> 1 match tos 0xa0/0xe0<br>!<br>ip class-map prt6<br> 1 match tos 0xc0/0xe0<br>!<br>ip class-map prt7<br> 1 match tos 0xe0/0xe0<br>!<br>ip policy-map prio<br> class prt0 rate 1kbit ceil 10000mbit priority 7 tos 0x00/0xe0<br> class prt1 rate 1kbit ceil 10000mbit priority 6 tos 0x20/0xe0<br> class prt2 rate 1kbit ceil 10000mbit priority 5 tos 0x40/0xe0<br> class prt3 rate 1kbit ceil 10000mbit priority 4 tos 0x60/0xe0<br> class prt4 rate 1kbit ceil 10000mbit priority 3 tos 0x80/0xe0<br> class prt5 rate 1kbit ceil 10000mbit priority 2 tos 0xa0/0xe0<br> class prt6 rate 1kbit ceil 10000mbit priority 1 tos 0xc0/0xe0<br>class prt7 rate 1kbit ceil 10000mbit priority 0 tos 0xe0/0xe0<br>!<br>';
+  interfaceNames.forEach(function(item){
+    // var interface= ;// ethernet 0-10
+    resp+='interface '+ item.splice(8, 0, " ") + '<br>';
+      if(item in interfaces){
+        if( 'enable' in interfaces[item]  || interfaces[item].enable==1)   {
+          resp+='enable<br> ';
+
+        }
+        if('ip' in interfaces[item]  && interfaces[item].ip!="")   {
+            resp+='ip address '+ interfaces[item].ip + '<br> ';
+        }
+      }
+      resp+='!<br> ';
+
+  });
+  resp+='ip route 0.0.0.0/0 172.21.62.129<br>!<br>ip access-list no-invalid<br> 1 deny state invalid<br>!<br>service log<br> log<br>trace all<br> size 262144 131072<br> alert beep<br>!<br>service dns<br> 1 view default<br> auto-local-zones<br> zone .<br>   auto static<br>!<br>service ntp<br>1 server 0.ru.pool.ntp.org<br>2 server 1.ru.pool.ntp.org<br>3 server 2.ru.pool.ntp.org<br>4 server 3.ru.pool.ntp.org<br>!<br>service ssh<br>permit-adm-login<br>enable<br>!<br>ip forwarding';
+return resp
+}
 
 $(function() {
 
   if(session==2){
-    $('.prompt').html('DionisNX>')
+    $('.prompt').html(hostname+'>')
   }else{
-    $('.prompt').html('DionisNX login as: ');}
+    $('.prompt').html(hostname+' login as: ');}
   // Initialize a new terminal object
   var term = new Terminal('#input-line .cmdline', '#container output');
   term.init();

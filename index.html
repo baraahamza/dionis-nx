@@ -5,10 +5,10 @@
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="chrome=1" />
-    <title>HTML5 Web Terminal</title>
+    <title>Dionis-nx Terminal</title>
 
 <style>::selection {
-  background: #FF5E99;
+  background: #fff;
 }
 html, body {
   width: 100%;
@@ -155,7 +155,7 @@ body {
       </svg>
     </div>
     
-    <div style="margin:20px " id="commands">
+    <div style="margin:20px ;display: " id="commands">
        <!--  <p>логин :cli</p> 
           <p>пароль :cli</p> 
         <p>пароль администратора:adm</p> 
@@ -163,6 +163,9 @@ body {
         <br>
        <a href="doc.rar">скачать документация</a>
        -->
+      
+       <p>configure terminal</p>
+       <p>do show</p>
        <p>interface ethernet0</p>
        <p>ip address 10.10.1.2/24</p>
        <p>enable</p>
@@ -173,8 +176,7 @@ body {
    <script>
      $('#commands p').click(function(){
        $('input.cmdline:last').val($(this).text())
-     })
-  
+     }) 
    </script>
   </body>
 </html>
