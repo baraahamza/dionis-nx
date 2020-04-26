@@ -17,6 +17,8 @@ var routeTable=[];
 routeTable[0]="";
 var interfaceNames= ['ethernet0','ethernet1','ethernet2','ethernet3','ethernet4','ethernet5','ethernet6','ethernet7','ethernet8','ethernet9'];
 var portsIps=       ['10.10.1.1','10.10.2.1','10.10.3.1','10.10.4.1','10.10.5.1','10.10.6.1','10.10.7.1','10.10.8.1','10.10.9.1','10.10.10.1','10.10.11.1','10.10.12.1'];
+
+session=2;adminSession=2;configure=1;
 var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
   window.URL = window.URL || window.webkitURL;
   window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
@@ -62,7 +64,7 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
   ];
 
   var help='<div style="height: auto;    -webkit-column-width: unset;  -moz-column-width: unset;  -o-column-width: unset;  column-width: unset;"><p>cat       <span style="padding-left:30px;">     Display the contents of a file   </span></p><p> arping    <span style="padding-left:30px;">  Send ARP request</span></p><p>clear     <span style="padding-left:30px;">    Reset functions   </span></p><p>copy       <span style="padding-left:30px;">    Copy from one file to another   </span></p><p>echo     <span style="padding-left:30px;">    Print message on screen   </span></p><p>enable    <span style="padding-left:30px;">  Turn on privileged commands   </span></p><p>exit      <span style="padding-left:30px;">     Exit from the CLI   </span></p><p>help      <span style="padding-left:30px;">    Help about command line interface   </span></p><p>less      <span style="padding-left:30px;">     Display the contents of a file   </span></p><p>ls        <span style="padding-left:30px;">       List files on a filesystem   </span></p><p>mkdir     <span style="padding-left:30px;">   Create directory   </span></p><p>ping      <span style="padding-left:30px;">    Send echo messages   </span></p><p>rm        <span style="padding-left:30px;">     Delete file   </span></p><p>show      <span style="padding-left:30px;">   Show system information   </span></p><p>ssh       <span style="padding-left:30px;">      SSH client   </span></p><p>telnet         Telnet client   </span></p><p>traceroute <span style="padding-left:30px;"> Trace route to destination   </span></p><p>whois      <span style="padding-left:30px;">   Get whois information </span></p>';
-
+ 
   var fs_ = null;
   var cwd_ = null;
   var history_ = [];
@@ -119,12 +121,66 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
     line.removeAttribute('id')
     line.classList.add('line');
     var input = line.querySelector('input.cmdline');
+
+    var vall=this.value.trim().replace(/ +(?= )/g,'').toLowerCase();
+    if (e.keyCode == 191 && vall=="" && session==2){ // key=> ?
+      e.preventDefault();
+       output(help);
+       goDown();
+       
+    }
+    if (e.keyCode == 9) {// tab
+      e.preventDefault();
+      if(input.value==""){
+        if(configure==1){
+          output('<div class="ls-files">' + ConfigCMDS_.join('<br>') + '</div>');
+        }else{
+          output('<div class="ls-files">' + CMDS_.join('<br>') + '</div>');
+        }
+        goDown();
+        return;
+      }else{
+      var similars = [];
+      if(configure==1){
+        if(vall=='do'){
+          // return
+            output('<div class="ls-files">' + ConfigAdminCMDS_.join('<br>') + '</div>');
+            goDown();
+            return
+        }
+        // $.each(ConfigCMDS_, function (i, v) {
+        //   let re = new RegExp('^' +input.value,'i');
+        //     if (v.match(re)) {
+        //       similars.push(v);
+        //     }
+        // });
+      }else{
+        $.each(CMDS_, function (i, v) {
+          let re = new RegExp('^' +input.value,'i');
+            if (v.match(re)) {
+              similars.push(v);
+            }
+        });
+      }
+      
+      if(similars.length==1){
+          input.value=similars[0];
+          this.value=similars[0];
+        return;
+      }else if(similars.length>1){
+        output('<div class="ls-files">' + similars.join('<br>') + '</div>');
+        input.value='';  this.value='';
+        return;
+      }
+      }
+      return;
+    }
       if (e.keyCode == 13 || e.keyCode == 9) { // enter
-      $('#container').animate({scrollTop: $('#container')[0].scrollHeight});
+        goDown();
       input.autofocus = false;
       input.readOnly = true;
       output_.appendChild(line);
-       var vall=this.value.trim().replace(/ +(?= )/g,'').toLowerCase();
+       
       if(session!=2){
           if(session==0){
             $('input.cmdline').val("");
@@ -154,66 +210,29 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
         if(adminSession==0){
           if(vall=='enable'){
             adminSession=1;
-            $('input.cmdline').val("");
-            $('input.cmdline:last').addClass("hiddenText");
+            // $('input.cmdline').val("");
+            $('input.cmdline:last').addClass("hiddenText").val("");
             $('.prompt:last').html('Password:');
+            return output('');
           }
         }else if (adminSession==1){
-          $('input.cmdline').val("");
+          // $('input.cmdline').val("");
+          // alert(vall);
           if(vall!=AdminPassword){
             $('input.cmdline:last').removeClass("hiddenText");
             adminSession=0;  $('.prompt:last').html(hostname+'>');
-            return output(':The password is wrong!');
-          
+             output(':The password is wrong!');
+            $('input.cmdline:last').val("");
+            return
          }else{
           adminSession=2;
             $('.prompt:last').html(hostname+'#');
-            $('input.cmdline:last').removeClass("hiddenText");
+            $('input.cmdline:last').removeClass("hiddenText").val("");
+            return;
          }
         }
       }
-      if (e.keyCode == 9) {// tab
-        e.preventDefault();
-        if(input.value==""){
-          if(configure==1){
-            output('<div class="ls-files">' + ConfigCMDS_.join('<br>') + '</div>');
-          }else{
-            output('<div class="ls-files">' + CMDS_.join('<br>') + '</div>');
-          }
-          
-        }else{
-        var similars = [];
-        if(configure==1){
-          if(vall=='do'){
-            output('<div class="ls-files">' + ConfigAdminCMDS_.join('<br>') + '</div>');
-          }
-          $.each(ConfigCMDS_, function (i, v) {
-            let re = new RegExp('^' +input.value,'i');
-              if (v.match(re)) {
-                similars.push(v);
-              }
-          });
-        }else{
-          $.each(CMDS_, function (i, v) {
-            let re = new RegExp('^' +input.value,'i');
-              if (v.match(re)) {
-                similars.push(v);
-              }
-          });
-        }
-        
-        if(similars.length==1){
-          input.value=similars[0];
-          this.value=similars[0];
-
-        }else if(similars.length>1){
-          output('<div class="ls-files">' + similars.join('<br>') + '</div>');
-          input.value='';  this.value='';
-          return;
-        }
-        }
-        return;
-      }
+      
 
        if (this.value) {
           history_[history_.length] = this.value;
@@ -228,6 +247,9 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
         if(configure==1){
     
           $('input.cmdline:last').val("");
+          if(vall=='do'){
+           return output('<div class="ls-files">' + ConfigAdminCMDS_.join('<br>') + '</div>');
+          }
           if(vall.startsWith("hostname ")){
             hostname=vall.replace(/hostname /g,'');
             if (hostname.indexOf('-') > -1)
@@ -484,8 +506,7 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
                 }
                 $('#input-line').hide();
                 seq++;
-                $('#container').animate({ 
-                 scrollTop: $('#container')[0].scrollHeight});
+                goDown();
 
                 if(seq == 4 ){  myStopFunction();}
               
@@ -656,8 +677,7 @@ $(function() {
   }, 1000);
 });
 $(document).ready(function(){
-  $('#container').animate({
-                     scrollTop: $('#container')[0].scrollHeight}); 
+  goDown();
 });
 function ValidateIPaddress(inputText)
  {
@@ -675,6 +695,11 @@ if(clearMask == true){
 }
   var mask=inputText.split('/')[1];
   return Number(ip[0])+'.'+ Number(ip[1])+'.'+ Number(ip[2])+'.'+ Number(ip[3]) + '/' + mask
+}
+
+function goDown(){
+  $('#container').animate({scrollTop: $('#container')[0].scrollHeight});
+  return;
 }
 
 function checkSettings(interfaces,MASK,portsIps,interfaceNames,currectInterface,ipToPing){
