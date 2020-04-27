@@ -108,3 +108,11 @@ function checkSettings(interfaces, MASK, portsIps, interfaceNames, currectInterf
     }
     return false;
 }
+
+function interfaceBindings(){
+    var resp="";
+    interfaceNames.forEach(function(item,index){
+        resp+=item + ' '+ interfaceMacs[index] + '<br>';
+    });
+    return resp;
+}

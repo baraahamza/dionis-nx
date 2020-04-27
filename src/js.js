@@ -1,6 +1,4 @@
-session = 2;
-adminSession = 2;
-configure = 1;
+
 
 var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
     window.URL = window.URL || window.webkitURL;
@@ -64,8 +62,12 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
         line.removeAttribute('id')
         line.classList.add('line');
         var input = line.querySelector('input.cmdline');
-
-        var vall = this.value.trim().replace(/ +(?= )/g, '').toLowerCase();
+        
+        var vall = this.value.trim().replace(/ +(?= )/g, '');
+        if (!vall.startsWith("hostname ")) {
+            vall=vall.toLowerCase();
+        }
+        
         if (e.keyCode == 191 && vall == "" && session == 2) { // key=> ?
             e.preventDefault();
             output(help);
@@ -120,11 +122,13 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
             return;
         }
         if (e.keyCode == 13 || e.keyCode == 9) { // enter
-            goDown();
+            if(vall == ''){return}
+             goDown();
             input.autofocus = false;
             input.readOnly = true;
             output_.appendChild(line);
-
+           
+              
             if (session != 2) {
                 if (session == 0) {
                     $('input.cmdline').val("");
@@ -199,8 +203,6 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
                     if (hostname.indexOf('-') > -1) {
                         var sp = hostname.split('-');
                         if ((typeof sp[0] != 'undefined' && sp[0].length > 0) && (typeof sp[1] != 'undefined' && sp[1].length > 0)) {
-                            console.log(sp[0]);
-                            console.log(sp[1]);
                             $('.prompt:last').html(hostname + '(config)#');
                             $('input.cmdline:last').removeClass("hiddenText");
                             return;
@@ -225,6 +227,9 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
 
                     $('.prompt:last').html(hostname + '(config-if-' + currectInterface + ')#');
                     return;
+                }
+                if(vall == 'show interface bindings'){
+                      return output(interfaceBindings());
                 }
 
                 if (currectInterface != "") {
@@ -276,26 +281,42 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
                         return;
                     }
                     if (vall.startsWith("do ping ")) {
+                        // var ipToPing = vall.replace(/do ping /g, '');
+                        var pingOptions = vall.replace(/do ping /g, '').split(' ');
+                        var ipToPing =pingOptions[0];
+                        var pingCount=5;
+                        if(typeof pingOptions[1] !== "undefined"  ){
+                            if( pingOptions[1]=='indefinite') {
+                                pingCount='indefinite';
+                            }else if(pingOptions[1]=='repeat' && typeof pingOptions[2] !== "undefined" && !isNaN(pingOptions[2])  ){
+                                pingCount = pingOptions[2];
+                            }else{
+                                return output("Syntax error: Illegal parameter");
+                            }
+                        }
+                        console.log(pingOptions);
+
+
                         // // check if enabled
                         if (!'enable' in interfaces[currectInterface] || interfaces[currectInterface].enable != 1) {
-                            return doPING(ipToPing, false);
+                            return doPING(ipToPing, false,pingCount);
                         }
                         if (!'ip' in interfaces[currectInterface] || interfaces[currectInterface].ip == "") {
-                            return doPING(ipToPing, false);
+                            return doPING(ipToPing, false,pingCount);
                         }
 
-                        var ipToPing = vall.replace(/do ping /g, '');
+                        
                         if (ValidateIPaddress(ipToPing + '/24') == false) {
                             return output("You have entered an invalid IP address!");
                         }
                         ipToPing = clearIPAddress(ipToPing);
                         var sliptd = interfaces[currectInterface].ip.split('/');
                         if (sliptd[1] != MASK) {
-                            return doPING(ipToPing, false);
+                            return doPING(ipToPing, false,pingCount);
                         }
 
                         if (checkSettings(interfaces, MASK, portsIps, interfaceNames, currectInterface, ipToPing)) {
-                            return doPING(ipToPing, true);
+                            return doPING(ipToPing, true,pingCount);
                         }
                         //  check if one of interfaces is defualt
                         if (routeTable[0] != '' && typeof routeTable[0] !== "undefined") {
@@ -303,33 +324,33 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
 
                             if (routeTable[0] == sliptd[0]) { //if this interface is default
                                 if (ipToPing == sliptd[0]) { //if self ping
-                                    return doPING(ipToPing, false);
+                                    return doPING(ipToPing, false,pingCount);
                                 }
                                 // get target interface
                                 var rest = ipToPing.substring(0, ipToPing.lastIndexOf(".") + 1) + '1';
                                 if (checkSettings(interfaces, MASK, portsIps, interfaceNames, interfaceNames[portsIps.indexOf(rest)], rest) != true) {
-                                    return doPING(ipToPing, false);
+                                    return doPING(ipToPing, false,pingCount);
                                 }
                                 // if ! isset target
                                 if (interfaces[interfaceNames[portsIps.indexOf(rest)]].ip != ipToPing + '/' + MASK && ipToPing != rest) {
-                                    return doPING(ipToPing, false);
+                                    return doPING(ipToPing, false,pingCount);
                                 }
 
-                                return doPING(ipToPing, true);
+                                return doPING(ipToPing, true,pingCount);
                             } else {
                                 var rest = ipToPing.substring(0, ipToPing.lastIndexOf(".") + 1);
                                 var last = ipToPing.substring(ipToPing.lastIndexOf(".") + 1, ipToPing.length);
                                 var n = routeTable[0].startsWith(rest);
                                 if (n == true) { ///if pinging defualt interface
                                     if (checkSettings(interfaces, MASK, portsIps, interfaceNames, interfaceNames[portsIps.indexOf(rest + '1')], rest + '1') != true) {
-                                        return doPING(ipToPing, false);
+                                        return doPING(ipToPing, false,pingCount);
                                     }
                                     // if isset target
                                     if (last == '1') {
-                                        return doPING(ipToPing, true);
+                                        return doPING(ipToPing, true,pingCount);
                                     }
                                     if (interfaces[interfaceNames[portsIps.indexOf(rest + '1')]].ip == ipToPing + '/' + MASK) {
-                                        return doPING(ipToPing, true);
+                                        return doPING(ipToPing, true,pingCount);
                                     }
                                 }
                             }
@@ -340,16 +361,16 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
                         var last = ipToPing.substring(ipToPing.lastIndexOf(".") + 1, ipToPing.length);
                         if (routeTable.indexOf(from + ' - ' + targ) != -1 || routeTable.indexOf(targ + ' - ' + from) != -1) {
                             if (checkSettings(interfaces, MASK, portsIps, interfaceNames, interfaceNames[portsIps.indexOf(targ)], targ) != true) {
-                                return doPING(ipToPing, false);
+                                return doPING(ipToPing, false,pingCount);
                             }
                             if (last == '1') {
-                                return doPING(ipToPing, true);
+                                return doPING(ipToPing, true,pingCount);
                             }
                             if (interfaces[interfaceNames[portsIps.indexOf(targ)]].ip == ipToPing + '/' + MASK) {
-                                return doPING(ipToPing, true);
+                                return doPING(ipToPing, true,pingCount);
                             }
                         }
-                        return doPING(ipToPing, false);
+                        return doPING(ipToPing, false,pingCount);
                     }
 
                 } else {
@@ -411,6 +432,7 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
                             }
                         }
                     }
+                    
                 }
                 switch (cmd) {
 
@@ -425,6 +447,11 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
                             if (currectInterface in interfaces) {
                                 if ('ip' in interfaces[currectInterface] && interfaces[currectInterface].ip != "") {
                                     output('ip address ' + interfaces[currectInterface].ip);
+                                    if(interfaces[currectInterface].enable == 1){
+                                        output('enable');
+                                    }
+                                    
+
                                 }
                             }
                         }
@@ -442,7 +469,7 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
                         output(cmd + ': command not found');
                 }
 
-                function doPING(target, result = true) {
+                function doPING(target, result = true,pingCount = 5) {
                     // if(result!=true){
                     //   // $('input.cmdline:last').val("");
                     //   return output('network address unreachable ');
@@ -467,9 +494,10 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
                         $('#input-line').hide();
                         seq++;
                         goDown();
-
-                        if (seq == 4) {
-                            myStopFunction();
+                       if(pingCount !='indefinite'){
+                            if (seq == pingCount) {
+                                myStopFunction();
+                            }
                         }
 
                     }
