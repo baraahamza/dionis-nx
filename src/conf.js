@@ -15,7 +15,7 @@ var currectInterface="";
 var routeTable=[];
 routeTable[0]="";
 var interfaceNames= ['ethernet0','ethernet1','ethernet2','ethernet3','ethernet4','ethernet5','ethernet6','ethernet7','ethernet8','ethernet9'];
-var portsIps=       ['10.10.1.1','10.10.2.1','10.10.3.1','10.10.4.1','10.10.5.1','10.10.6.1','10.10.7.1','10.10.8.1','10.10.9.1','10.10.10.1','10.10.11.1','10.10.12.1'];
+var portsIps=       ['10.10.1.1','10.10.2.1','10.10.3.1','10.10.4.1','10.10.5.1','10.10.6.1','10.10.7.1','10.10.8.1','10.10.9.1','10.10.10.1'];
 var interfaceMacs= ['08:00:27:28:e6:bd','08:00:27:6c:c9:d6 ','08:00:27:cc:43:24 ','08:00:27:4b:6c:24 ','08:00:27:4s:6c:04 ','08:00:27:8c:19:d6','08:00:25:rc:18:y6','08:00:17:sc:d9:f6','08:00:17:18:e6:sd','08:00:17:22:s6:be'];
 const CMDS_ = [
     'arping','clear' ,'copy','enable','exit','help','less','ls','mkdir','ping','rm','show','ssh','telnet','traceroute','whois'];

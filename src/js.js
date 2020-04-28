@@ -431,6 +431,7 @@ var Terminal = Terminal || function(cmdLineContainer, outputContainer) {
                                 output('S>* ' + sibilings[0] + '/' + MASK + ' [1/0] via ' + sibilings[1] + ',  ' + interfaceNames[portsIps.indexOf(sibilings[1])]);
                             }
                         }
+                       return ;
                     }
                     
                 }
